@@ -160,7 +160,16 @@ summary(modelo_tc4)$r.squared
 # 2. Ajustar modelo_tc5 con transito_miles, pm25 y noche (sin franja).
 # 3. Mostrar los coeficientes y el R². ¿Cuánto suma la noche?
 # -----------------------------------------------------------------------------
+summary(modelo_tc4)
 
+tc4 <- tc %>%
+  mutate(noche = ifelse(franja == "noche", 1, 0))
+
+modelo_tc5 <- lm(no2 ~ transito_miles + pm25 + noche, data = tc4)
+coef(modelo_tc5)
+summary(modelo_tc5)$r.squared
+
+## Sacar los otros y remplazarlos por noche resta a la explicación del modelo (R2 más chico, va de 0,4861 a 0,4813)
 
 # =============================================================================
 # EJERCICIO 6. Interacciones
@@ -185,10 +194,26 @@ print(g17)
 # modelo_tc6 <- lm(no2 ~ transito_miles * franja, data = tc)
 #
 # 1. Mirar el gráfico: ¿qué franja tiene la recta más empinada?
+### La madrugada tiene la recta más empinada: el NO2 aumenta más rápido con el tránsito en esa franja que en las demás.
+
 # 2. Crear en tc una variable binaria para esa franja (1 si la hora
 #    pertenece a esa franja, 0 si no).
+tc <- tc |>
+  mutate(madrugada = ifelse(franja == "madrugada", 1, 0))
+
 # 3. Ajustar modelo_tc7 con la interacción entre transito_miles y la
 #    variable nueva. Mostrar los coeficientes y el R²
+modelo_tc7 <- lm(no2 ~ transito_miles * madrugada, data = tc)
+coef(modelo_tc7)
+summary(modelo_tc7)$r.squared
+
+### Coeficientes:
+### intercepto 25,516
+### transito_miles 0,583
+### madrugada -31,395
+### transito_miles:madrugada 2,355
+
+### R² = 0,3975
 
 # =============================================================================
 # EJERCICIO 7. ¿QUÉ PASA EN LA TARDE?
@@ -200,3 +225,24 @@ print(g17)
 #    colorear por tipo_dia en lugar de franja.
 # 3. ¿Qué son los dos grupos?
 # -----------------------------------------------------------------------------
+
+## 1.
+tarde <- tc |>
+  filter(franja == "tarde")
+
+## 2.
+g17ej7 <- ggplot(tarde, aes(transito_miles, no2, color = tipo_dia)) +
+  geom_point(size = 2.5, alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1.2) +
+  scale_color_manual(values = c("fin de semana" = "#CC79A7",
+                                "lunes a viernes" = "#0072B2")) +
+  labs(title = "Tránsito y NO2 en Tres Cruces, por tipo de día (tarde)",
+       x = "Miles de vehículos por hora", y = "NO2 (µg/m³)",
+       color = NULL)
+print(g17ej7)
+
+## 3.
+## Los dos grupos corresponden a los días de semana y los fines de semana. 
+## Durante la tarde, de lunes a viernes hay mayor tránsito (alrededor de 38 y 49 mil vehículos por hora), 
+## mientras que los fines de semana el tránsito es menor (entre 20 y 38 mil vehículos por hora). 
+## Entonces, la separación de los grupos se explica por el tipo de día.
